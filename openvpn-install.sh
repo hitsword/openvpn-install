@@ -356,6 +356,11 @@ function installQuestions() {
 		fi
 	done
 	echo ""
+	echo "Do you want to use udp2raw and udpseeder?"
+	until [[ $UDPTOOLS_ENABLED =~ (y|n) ]]; do
+		read -rp"Enable udptools? [y/n]: " -e -i n UDPTOOLS_ENABLED
+	done
+	echo ""
 	echo "Do you want to use compression? It is not recommended since the VORACLE attack makes use of it."
 	until [[ $COMPRESSION_ENABLED =~ (y|n) ]]; do
 		read -rp"Enable compression? [y/n]: " -e -i n COMPRESSION_ENABLED
@@ -619,6 +624,7 @@ function installOpenVPN() {
 		PORT_CHOICE=${PORT_CHOICE:-1}
 		PROTOCOL_CHOICE=${PROTOCOL_CHOICE:-1}
 		DNS=${DNS:-1}
+		UDPTOOLS_ENABLED=${UDPTOOLS_ENABLED:-n}
 		COMPRESSION_ENABLED=${COMPRESSION_ENABLED:-n}
 		CUSTOMIZE_ENC=${CUSTOMIZE_ENC:-n}
 		CLIENT=${CLIENT:-client}
@@ -899,6 +905,18 @@ client-config-dir /etc/openvpn/ccd
 status /var/log/openvpn/status.log
 verb 3" >>/etc/openvpn/server.conf
 
+  if [[ $UDPTOOLS_ENABLED == "y" ]]; then
+cat >> /etc/openvpn/server.conf<<EOF
+##UDP2RAW
+fragment 1200       ##### very important    you can turn it up a bit. but,the lower the safer
+mssfix 1200         ##### very important
+sndbuf 2000000      ##### important
+rcvbuf 2000000      ##### important
+txqueuelen 4000     ##### suggested
+push "route ${IP} 255.255.255.255 net_gateway"
+EOF
+	fi
+	
 	# Create client-config-dir dir
 	mkdir -p /etc/openvpn/ccd
 	# Create log dir
@@ -1032,8 +1050,7 @@ WantedBy=multi-user.target" >/etc/systemd/system/iptables-openvpn.service
 	elif [[ $PROTOCOL == 'tcp' ]]; then
 		echo "proto tcp-client" >>/etc/openvpn/client-template.txt
 	fi
-	echo "remote $IP $PORT
-dev tun
+	echo "dev tun
 resolv-retry infinite
 nobind
 persist-key
@@ -1049,6 +1066,18 @@ tls-cipher $CC_CIPHER
 ignore-unknown-option block-outside-dns
 setenv opt block-outside-dns # Prevent Windows 10 DNS leak
 verb 3" >>/etc/openvpn/client-template.txt
+
+	if [[ $UDPTOOLS_ENABLED == "y" ]]; then
+	  echo "##UDP2RAW
+remote 127.0.0.1 $PORT
+fragment 1200       ##### very important    you can turn it up a bit. but,the lower the safer
+mssfix 1200         ##### very important
+sndbuf 2000000      ##### important
+rcvbuf 2000000      ##### important
+txqueuelen 4000     ##### suggested" >>/etc/openvpn/client-template.txt
+	else
+	  echo "remote $IP $PORT" >>/etc/openvpn/client-template.txt
+	fi
 
 	if [[ $COMPRESSION_ENABLED == "y" ]]; then
 		echo "compress $COMPRESSION_ALG" >>/etc/openvpn/client-template.txt
