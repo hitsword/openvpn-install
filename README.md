@@ -15,7 +15,7 @@ You can also check out [wireguard-install](https://github.com/angristan/wireguar
 First, get the script and make it executable:
 
 ```bash
-curl -O https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh
+curl -O https://raw.githubusercontent.com/hitsword/openvpn-install/master/openvpn-install.sh
 chmod +x openvpn-install.sh
 ```
 
@@ -48,11 +48,13 @@ It's also possible to run the script headless, e.g. without waiting for user inp
 Example usage:
 
 ```bash
-AUTO_INSTALL=y ./openvpn-install.sh
+AUTO_INSTALL=y CLIENT=route1 UDPTOOLS_ENABLED=y ./openvpn-install.sh
 
 # or
 
 export AUTO_INSTALL=y
+export UDPTOOLS_ENABLED=y
+export CLIENT=route1
 ./openvpn-install.sh
 ```
 
@@ -66,6 +68,7 @@ If you want to customise your installation, you can export them or specify them 
 - `PORT_CHOICE=1`
 - `PROTOCOL_CHOICE=1`
 - `DNS=1`
+- `UDPTOOLS_ENABLED=n`
 - `COMPRESSION_ENABLED=n`
 - `CUSTOMIZE_ENC=n`
 - `CLIENT=clientname`
